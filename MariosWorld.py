@@ -42,6 +42,7 @@ flying=False
 falling=False
 sliding=False
 jumpcounter=0
+poletouch=None
 
 
 
@@ -71,7 +72,6 @@ while running:
              if pygame.Rect((mariox+10,marioy),(32,64)).colliderect(pygame.Rect(p,(64,30))):
                  willcollide=True
                  mariox=p[0]-33
-                 print("willcollide",mariox,marioy)
                  break
         if not willcollide: 
             mariox=mariox + 10
@@ -82,10 +82,17 @@ while running:
         for p in poles:
             if pygame.Rect((mariox,marioy),(32,64)).colliderect(pygame.Rect(p,(4,250+64))):
                  willcollide=True
-                 sliding=True
-                 mariox=p[0]-33
-                 print("willcollide",mariox,marioy)
+                 if sliding :
+                     mariox=p[0]+5
+                     poletouch="left"
+                 else:
+                     sliding=True
+                     mariox=p[0]-33
                  break
+        if poletouch=="left" and not willcollide:
+             print("problem93")            
+             sliding=False
+             poletouch=None
            
         
             
@@ -95,7 +102,6 @@ while running:
              if pygame.Rect((mariox-10,marioy),(32,64)).colliderect(pygame.Rect(p,(64,30))):
                  willcollide=True
                  mariox=p[0]+65
-                 print("willcollide",mariox,marioy)
                  break
         if not willcollide: 
             mariox=mariox - 10
@@ -105,17 +111,42 @@ while running:
         willcollide=False 
         for p in poles:
             if pygame.Rect((mariox,marioy),(32,64)).colliderect(pygame.Rect(p,(4,250+64))):
+                 print("touching")
                  willcollide=True
-                 sliding=True
-                 mariox=p[0]+5
-                 print("willcollide",mariox,marioy)
+                 if sliding :
+                     print("moving left")
+                     mariox=p[0]-33
+                     poletouch="right"
+                 else:
+                     print("will slide")
+                     sliding=True
+                     mariox=p[0]+5
                  break
-           
+        if poletouch=="right" and not willcollide:
+            print("problem126")
+            sliding=False
+            poletouch=None
+            
+    if keys[pygame.K_DOWN]:
+        willcollide=False        
+        if sliding:
+            print("is sliding")
+            for p in platforms:
+                if pygame.Rect((mariox,marioy+10),(32,64)).colliderect(pygame.Rect(p,(64,30))):
+                    willcollide=True
+                    platformheight=p[1]
+                    break
+            if not willcollide and marioy<=490:
+                marioy+=10
+            elif willcollide:
+                marioy=platformheight-65
+                
+         
             
     if keys[pygame.K_UP]:
         willcollide=False
         if not falling:
-            if jumpcounter<=7:
+            if jumpcounter<=7 and not sliding:
                 
                 for p in platforms:
                     if (pygame.Rect((mariox,marioy-20),(32,64)).colliderect(pygame.Rect(p,(64,30))) and marioy>=p[1]):
@@ -130,8 +161,19 @@ while running:
                 else:
                     if platformheight+30<500:
                         marioy=platformheight+30
-            elif marioy<=500:
+            elif marioy<=500 and not sliding:
                 falling=True
+        if sliding:
+                print("is sliding")
+                for p in poles:
+                   if pygame.Rect((mariox,marioy-10),(32,64)).colliderect(pygame.Rect((p[0]-2,p[1]-8),(8,8))):
+                         willcollide=True
+                         platformheight=p[1]-8
+                         break
+                   if not willcollide:
+                         marioy -=10
+                
+                
     else:
         if marioy<=500:
             falling=True
@@ -141,18 +183,19 @@ while running:
     if not keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT] and not keys[pygame.K_UP]:
             moving=False
 #########ON THE FLOOR       
-    if marioy>=500:    
+    if marioy>=500:
+            
             flying=False
             falling=False
             jumpcounter=0
-            sliding=False
+            
    
 ###########SOME COLLISION AND FALLING
 
      
     if marioy<500:
         willcollide=False
-        if falling:
+        if falling and not sliding:
             marioy= marioy +10           
             platformheight=500
             for p in platforms :
@@ -165,7 +208,6 @@ while running:
                      
                      
             if willcollide and marioy<=platformheight:  
-                print("platform")
                 falling=False
                 flying=False
                 
@@ -174,9 +216,10 @@ while running:
                 
                 
     else:
+        
         falling=False        
         jumpcounter=0
-        sliding=False
+        
         
   #########POSES and MOVEMENTSTATE            
             
@@ -203,7 +246,10 @@ while running:
              
     elif flying:
         if sliding:
-             sprite=poleing
+            if poletouch=="right":
+                sprite=poleing
+            else:
+                sprite=pygame.transform.flip(poleing,True,False)
         else:
              sprite=jumping
         screen.blit(sprite,(mariox,marioy))    
