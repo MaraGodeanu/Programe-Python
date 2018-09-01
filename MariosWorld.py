@@ -1,6 +1,48 @@
 import pygame
 import sys
 
+class Pet:
+    def __init__(self,x,y):
+        self.position=(x,y)
+        self.alive=True
+        self.onscreen=True
+        self.images=[]
+        self.look=None
+    
+    def update(self):
+        pass
+        
+    def draw(self,screen):
+        screen.blit(self.images[self.look],self.position)
+        
+class Mushroom(Pet):
+    def __init__(self,x,y):
+        super(Mushroom,self).__init__(x,y)
+        self.images=[pygame.transform.scale(pygame.image.load("images/mario/monster_mushroom.png").convert_alpha(),(32,32)),
+                     pygame.transform.scale(pygame.image.load("images/mario/crushed_mushroom1.png").convert_alpha(),(32,18))]
+        self.look=0
+        self.direction=-1
+        
+    def update(self):
+        x=self.position[0]
+        x+=self.direction*5
+        if x<=0 :
+            self.direction=1
+            x=0
+        if x>=1000-32:
+            self.direction=-1
+            x=1000-32
+        self.position=(x,self.position[1])    
+            
+        
+        
+
+
+
+
+
+
+
 pygame.init()
 
 running=True
@@ -11,7 +53,7 @@ clock=pygame.time.Clock()
 
 ##########IMAGES
 
-
+BLACK=(0,0,0)
 PINK=(220,40,166)
 jumping=pygame.transform.scale(pygame.image.load("images/mario/mario6.png").convert_alpha(),(32,64))
 standing=pygame.transform.scale(pygame.image.load("images/mario/mario1.png").convert_alpha(),(32,64))
@@ -23,11 +65,20 @@ floor=pygame.transform.scale(pygame.image.load("images/floor.png").convert_alpha
 platform=pygame.transform.scale(pygame.image.load("images/platform.png").convert_alpha(),(64,30))
 poletop=pygame.image.load("images/mario/pole_top.png").convert_alpha()
 pole=pygame.transform.scale(pygame.image.load("images/mario/pole.png").convert_alpha(),(4,32))
+coinimages=[pygame.transform.scale(pygame.image.load("images/mario/coin1.png").convert_alpha(),(20,28)),
+            pygame.transform.scale(pygame.image.load("images/mario/coin2.png").convert_alpha(),(20,28)),
+            pygame.transform.scale(pygame.image.load("images/mario/coin3.png").convert_alpha(),(20,28))]
+
+
+beep=pygame.mixer.Sound("sounds/smw_coin.wav")
+
 
 #########PLATFORMS
 
 platforms=[(700,450),(764,450),(300,420),(364,420),(200,350),(264,350),(830,490),(0,490)]
 poles=[(600,250+64)]
+coins=[(120,120),(400,380),(350,230)]
+pets=[Mushroom(500,532),Mushroom(250,532)]
 
 
 ##########VARIABLES
@@ -43,7 +94,10 @@ falling=False
 sliding=False
 jumpcounter=0
 poletouch=None
+score=0
+timecounter=0
 
+font=pygame.font.SysFont('Calibri',25,True,False)
 
 
 ############DO NOT ERASE/VITAL STUFF
@@ -184,7 +238,7 @@ while running:
             moving=False
 #########ON THE FLOOR       
     if marioy>=500:
-            
+            sliding=False
             flying=False
             falling=False
             jumpcounter=0
@@ -220,10 +274,31 @@ while running:
         falling=False        
         jumpcounter=0
         
+###############SCORE 
+
+    for i,c in enumerate(coins):
+        if pygame.Rect((mariox,marioy),(32,64)).colliderect(pygame.Rect(c,(20,28))) :
+            score+=10
+            beep.play()
+            del coins[i]
+            
+
         
+
+  
+
+
+    screen.fill(PINK)
+    textscore= font.render("score: " + str(score),True,BLACK)
+    screen.blit(textscore,(0,0))
+
+
+
+
+
+     
   #########POSES and MOVEMENTSTATE            
             
-    screen.fill(PINK)
     if moving and not flying:
         if direction==1:
             screen.blit(pygame.transform.flip(walking[imagemario],True,False),(mariox,marioy))     
@@ -269,8 +344,17 @@ while running:
         screen.blit(pygame.transform.scale(pole,(4,250)),p)
         screen.blit(poletop,(p[0]-2,p[1]-8))
         
+    for c in coins :
+        screen.blit(coinimages[timecounter//9],c)
+        
+    for p in pets :
+        p.update()
+        p.draw(screen)
+        
+        
     pygame.display.flip()        
-    clock.tick(25)        
+    clock.tick(25)
+    timecounter=(timecounter+1)%25        
     
 pygame.quit()
 sys.exit()    
