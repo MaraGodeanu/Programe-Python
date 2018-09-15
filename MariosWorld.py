@@ -4,26 +4,39 @@ import sys
 class Pet:
     def __init__(self,x,y):
         self.position=(x,y)
+        self.size=(0,0)
         self.alive=True
         self.onscreen=True
         self.images=[]
         self.look=None
-    
+        
+        
     def update(self):
         pass
         
     def draw(self,screen):
         screen.blit(self.images[self.look],self.position)
         
+    def x(self):
+        return self.position[0]
+    
+    def y(self):
+        return self.position[1]
+        
+        
 class Mushroom(Pet):
     def __init__(self,x,y):
         super(Mushroom,self).__init__(x,y)
-        self.images=[pygame.transform.scale(pygame.image.load("images/mario/monster_mushroom.png").convert_alpha(),(32,32)),
+        self.images=[pygame.transform.scale(pygame.image.load("images/mario/mushroom.png").convert_alpha(),(32,32)),
                      pygame.transform.scale(pygame.image.load("images/mario/crushed_mushroom1.png").convert_alpha(),(32,18))]
         self.look=0
         self.direction=-1
         
     def update(self):
+        if not self.alive :
+            return
+        
+        
         x=self.position[0]
         x+=self.direction*5
         if x<=0 :
@@ -34,13 +47,52 @@ class Mushroom(Pet):
             x=1000-32
         self.position=(x,self.position[1])    
             
+    def collidewith(self,x,y,sx,sy):
+        return pygame.Rect((x,y),(sx,sy)).colliderect(pygame.Rect(self.position,(32,32))) 
+    
+    def die(self):
+        self.alive=False
+        self.look=1
+        self.position=(self.position[0],self.position[1]+16)
         
+class Lootbox(Pet):
+    
+    def __init__(self,x,y):
+        super(Lootbox,self).__init__(x,y)
+        self.images=[pygame.transform.scale(pygame.image.load("images/mario/gift_box1.png").convert_alpha(),(32,32)),
+            pygame.transform.scale(pygame.image.load("images/mario/gift_box2.png").convert_alpha(),(32,32)),
+            pygame.transform.scale(pygame.image.load("images/mario/gift_box3.png").convert_alpha(),(32,32))]
+        self.counter=0
+        self.lcounter=0
+    def update(self):
+        if not self.alive:
+            self.lcounter+=1
+            self.leap()
+        else:    
+            self.look=self.counter//9
+            self.counter=(self.counter+1)%25
         
+    def collidewith(self,x,y,sx,sy):
+        return pygame.Rect((x,y),(sx,sy)).colliderect(pygame.Rect(self.position,(32,32)))
+    def gethit(self):
+        self.alive=False
+        self.look=2
+     #   self.position=(self.position[0],self.position[1]-16)
+       # self.leap()
+    def leap(self):
+        if 0<self.lcounter<=10:
+            self.position=(self.position[0],self.position[1]-5)
+            print(self.lcounter)
+        if 10<self.counter<=20 :
+            self.position=(self.position[0],self.position[1]+5)
+            print(self.lcounter)
+        if self.counter>20:
+            self.counter=0
+         #  self.position=(self.position[0],self.position[1]+10)
 
 
-
-
-
+              
+        
 
 
 pygame.init()
@@ -68,6 +120,9 @@ pole=pygame.transform.scale(pygame.image.load("images/mario/pole.png").convert_a
 coinimages=[pygame.transform.scale(pygame.image.load("images/mario/coin1.png").convert_alpha(),(20,28)),
             pygame.transform.scale(pygame.image.load("images/mario/coin2.png").convert_alpha(),(20,28)),
             pygame.transform.scale(pygame.image.load("images/mario/coin3.png").convert_alpha(),(20,28))]
+lootboximages=[pygame.transform.scale(pygame.image.load("images/mario/gift_box1.png").convert_alpha(),(32,32)),
+            pygame.transform.scale(pygame.image.load("images/mario/gift_box2.png").convert_alpha(),(32,32)),
+            pygame.transform.scale(pygame.image.load("images/mario/gift_box3.png").convert_alpha(),(32,32))]
 
 
 beep=pygame.mixer.Sound("sounds/smw_coin.wav")
@@ -78,8 +133,8 @@ beep=pygame.mixer.Sound("sounds/smw_coin.wav")
 platforms=[(700,450),(764,450),(300,420),(364,420),(200,350),(264,350),(830,490),(0,490)]
 poles=[(600,250+64)]
 coins=[(120,120),(400,380),(350,230)]
-pets=[Mushroom(500,532),Mushroom(250,532)]
-
+pets=[Mushroom(0,532,),Mushroom(100,532)]
+lootboxes=[Lootbox(200,200),Lootbox(150,200),Lootbox(250,250)]
 
 ##########VARIABLES
 
@@ -96,6 +151,8 @@ jumpcounter=0
 poletouch=None
 score=0
 timecounter=0
+lives=3
+shroomcounter=0
 
 font=pygame.font.SysFont('Calibri',25,True,False)
 
@@ -103,6 +160,13 @@ font=pygame.font.SysFont('Calibri',25,True,False)
 ############DO NOT ERASE/VITAL STUFF
 
 while running:
+    
+    if shroomcounter>=1:
+        shroomcounter+=1
+    if shroomcounter>50:
+        shroomcounter=0
+
+    
     
     
     
@@ -290,8 +354,9 @@ while running:
 
     screen.fill(PINK)
     textscore= font.render("score: " + str(score),True,BLACK)
+    textlives=font.render("lives: " + str(lives),True,BLACK)
     screen.blit(textscore,(0,0))
-
+    screen.blit(textlives,(100,0))
 
 
 
@@ -347,10 +412,38 @@ while running:
     for c in coins :
         screen.blit(coinimages[timecounter//9],c)
         
-    for p in pets :
+   # for i,g in giftboxes:
+        #screen.blit(lootboximages[timecounter//9],g)
+      #  g.draw()
+        
+    for i,p in enumerate(pets) :
         p.update()
         p.draw(screen)
-        
+        if p.collidewith(mariox,marioy,32,64) :
+            if p.alive:
+                
+                
+                
+                if marioy+64 - p.y()  <=10:
+                    print ("dead")
+                    # del pets[i]
+                    p.die()
+                    score+=10
+                if  marioy+64 - p.y()  >=10 and shroomcounter<1 :
+                    lives-=1
+                    print ("injuredmario")
+                    print(lives)
+                    shroomcounter+=1
+                    
+                    
+    for i,l in enumerate(lootboxes):
+        l.update()
+        l.draw(screen)
+        if l.collidewith(mariox,marioy,32,64):
+           print("working") 
+           l.gethit() 
+           if l.alive:    
+               score+=10 
         
     pygame.display.flip()        
     clock.tick(25)
