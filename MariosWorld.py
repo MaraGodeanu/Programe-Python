@@ -64,30 +64,38 @@ class Lootbox(Pet):
             pygame.transform.scale(pygame.image.load("images/mario/gift_box3.png").convert_alpha(),(32,32))]
         self.counter=0
         self.lcounter=0
+    #   self.wasalreadyhit=False
     def update(self):
-        if not self.alive:
+        if not self.alive  and self.lcounter<=20 :
             self.lcounter+=1
             self.leap()
+        elif not self.alive:
+            self.look=2
+            
         else:    
             self.look=self.counter//9
             self.counter=(self.counter+1)%25
         
     def collidewith(self,x,y,sx,sy):
         return pygame.Rect((x,y),(sx,sy)).colliderect(pygame.Rect(self.position,(32,32)))
-    def gethit(self):
+    def gethit(self,coins):
+        if self.alive:
+            coins.append((self.position[0]+150,self.position[1]-10))
+            print("merge",len(coins))
         self.alive=False
         self.look=2
-     #   self.position=(self.position[0],self.position[1]-16)
-       # self.leap()
+        
+        
+
     def leap(self):
         if 0<self.lcounter<=10:
             self.position=(self.position[0],self.position[1]-5)
             print(self.lcounter)
-        if 10<self.counter<=20 :
+        if 10<self.lcounter<=20 :
             self.position=(self.position[0],self.position[1]+5)
             print(self.lcounter)
-        if self.counter>20:
-            self.counter=0
+     #   if self.lcounter>20:
+         #   self.lcounter=0
          #  self.position=(self.position[0],self.position[1]+10)
 
 
@@ -441,7 +449,7 @@ while running:
         l.draw(screen)
         if l.collidewith(mariox,marioy,32,64):
            print("working") 
-           l.gethit() 
+           l.gethit(coins)
            if l.alive:    
                score+=10 
         
